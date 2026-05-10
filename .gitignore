@@ -1,4 +1,12 @@
 ```
+# Compiled and build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+
 # Build artifacts
 bin/
 obj/
@@ -15,12 +23,6 @@ node_modules/
 # Logs
 *.log
 
-# Environment
-*.exe
-*.dll
-*.so
-*.o
-*.obj
 *.out
 *.class
 *.pyc
@@ -99,4 +101,5 @@ out/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
 ```
