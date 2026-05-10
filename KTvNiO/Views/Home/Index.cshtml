@@ -5,52 +5,61 @@
     ViewData["Title"] = "Главная";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Система Дистанционного Обучения</h1>
-    <p class="lead">Изучайте решение квадратных уравнений онлайн</p>
-</div>
+<div class="container mt-5">
+    <div class="text-center mb-5 fade-in">
+        <h1 class="display-4 text-primary fw-bold">Система Дистанционного Обучения</h1>
+        <p class="lead text-muted">Изучайте решение квадратных уравнений и другие темы онлайн</p>
+    </div>
 
-<hr />
-
-<h2>Доступные курсы</h2>
-<div class="row">
-    @foreach (var course in Model)
-    {
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">@course.Title</h5>
-                    <p class="card-text">@course.Description</p>
-                </div>
-                <div class="card-footer">
-                    <a asp-controller="Courses" asp-action="Details" asp-route-id="@course.Id" class="btn btn-primary">Подробнее</a>
-                    @if (User.Identity.IsAuthenticated)
-                    {
-                        <form asp-controller="Courses" asp-action="Enroll" method="post" class="d-inline">
-                            <input type="hidden" name="courseId" value="@course.Id" />
-                            <button type="submit" class="btn btn-success">Записаться на курс</button>
-                        </form>
-                    }
-                    else
-                    {
-                        <a asp-controller="Account" asp-action="Login" class="btn btn-secondary">Войти для записи</a>
-                    }
-                </div>
+    <h2 class="mb-4 fw-bold">Доступные курсы</h2>
+    <div class="row g-4">
+        @foreach (var course in Model)
+        {
+            <div class="col-md-6 col-lg-4">
+                <a href="@Url.Action("Details", "Courses", new { id = course.Id })" class="course-card-link text-decoration-none">
+                    <div class="card h-100 shadow-sm interactive-card border-0">
+                        <div class="card-img-top bg-primary d-flex align-items-center justify-content-center text-white" style="height: 200px; font-size: 3rem;">
+                            <i class="bi bi-book"></i>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title text-dark fw-bold mb-3">@course.Title</h5>
+                            <p class="card-text text-muted flex-grow-1">@course.Description</p>
+                            <div class="mt-3">
+                                <span class="btn btn-primary w-100 interactive-btn">
+                                    Подробнее <i class="bi bi-arrow-right ms-2"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0 pb-3 pt-0">
+                            @if (User.Identity.IsAuthenticated)
+                            {
+                                <form asp-controller="Courses" asp-action="Enroll" method="post" class="d-inline w-100">
+                                    <input type="hidden" name="courseId" value="@course.Id" />
+                                    <button type="submit" class="btn btn-success w-100 interactive-btn">Записаться на курс</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <a asp-controller="Account" asp-action="Login" class="btn btn-secondary w-100 interactive-btn">Войти для записи</a>
+                            }
+                        </div>
+                    </div>
+                </a>
             </div>
+        }
+    </div>
+
+    @if (!User.Identity.IsAuthenticated)
+    {
+        <div class="alert alert-info mt-5 fade-in" role="alert">
+            <h4 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Демо-доступ</h4>
+            <p>Для демонстрации системы используйте следующие учетные данные:</p>
+            <ul class="mb-0">
+                <li><strong>Студент:</strong> student1@test.com / password123</li>
+                <li><strong>Преподаватель:</strong> teacher1@test.com / password123</li>
+                <li><strong>Разработчик:</strong> developer1@test.com / password123</li>
+                <li><strong>Поддержка:</strong> support1@test.com / password123</li>
+            </ul>
         </div>
     }
 </div>
-
-@if (!User.Identity.IsAuthenticated)
-{
-    <div class="alert alert-info mt-4">
-        <h4>Демо-доступ</h4>
-        <p>Для демонстрации системы используйте следующие учетные данные:</p>
-        <ul>
-            <li><strong>Студент:</strong> student1@test.com / password123</li>
-            <li><strong>Преподаватель:</strong> teacher1@test.com / password123</li>
-            <li><strong>Разработчик:</strong> developer1@test.com / password123</li>
-            <li><strong>Поддержка:</strong> support1@test.com / password123</li>
-        </ul>
-    </div>
-}

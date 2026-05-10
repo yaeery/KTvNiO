@@ -5,44 +5,94 @@
     ViewData["Title"] = Model.Title;
 }
 
-<h2>@Model.Title</h2>
-<hr />
+<div class="container mt-5">
+    <nav aria-label="breadcrumb" class="mb-4 fade-in">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")" class="text-decoration-none">Главная</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+        </ol>
+    </nav>
 
-<div class="row">
-    <div class="col-md-8">
-        <p class="lead">@Model.Description</p>
-        
-        @if (User.Identity.IsAuthenticated)
-        {
-            <form asp-controller="Courses" asp-action="Enroll" method="post" class="mb-3">
-                <input type="hidden" name="courseId" value="@Model.Id" />
-                <button type="submit" class="btn btn-success btn-lg">Записаться на курс</button>
-            </form>
-        }
-        else
-        {
-            <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg">Войти для записи</a>
-        }
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Информация о курсе</h5>
-                <p class="card-text">
-                    <strong>Дата создания:</strong> @Model.CreatedAt.ToShortDateString()<br/>
-                    <strong>Статус:</strong> @(Model.IsPublished ? "Опубликован" : "Скрыт")
-                </p>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 interactive-card fade-in">
+                <div class="card-body p-4">
+                    <h1 class="display-5 fw-bold text-primary mb-3">@Model.Title</h1>
+                    <p class="lead text-muted mb-4">@Model.Description</p>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <form asp-controller="Courses" asp-action="Enroll" method="post" class="d-inline">
+                                <input type="hidden" name="courseId" value="@Model.Id" />
+                                <button type="submit" class="btn btn-success btn-lg interactive-btn">
+                                    <i class="bi bi-check-circle me-2"></i>Записаться на курс
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg interactive-btn">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Войти для записи
+                            </a>
+                        }
+                        <a href="@Url.Action("Learn", "Courses", new { id = Model.Id })" class="btn btn-outline-primary btn-lg interactive-btn">
+                            <i class="bi bi-play-circle me-2"></i>Начать обучение
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mt-4 interactive-card fade-in">
+                <div class="card-header bg-white border-0 py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-journal-text me-2"></i>Программа курса</h4>
+                </div>
+                <div class="card-body p-4">
+                    @Html.Raw(Model.Content)
+                </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="mt-4">
-    <h4>Программа курса</h4>
-    <div class="card">
-        <div class="card-body">
-            @Html.Raw(Model.Content)
+        
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 interactive-card fade-in sticky-top" style="top: 2rem;">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-info-circle me-2"></i>Информация о курсе</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-calendar me-2 text-muted"></i>Дата создания:</span>
+                            <span class="fw-bold">@Model.CreatedAt.ToShortDateString()</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-eye me-2 text-muted"></i>Статус:</span>
+                            <span class="badge @(Model.IsPublished ? "bg-success" : "bg-secondary")">@(Model.IsPublished ? "Опубликован" : "Скрыт")</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-clock me-2 text-muted"></i>Длительность:</span>
+                            <span class="fw-bold">@(Model.DurationHours ?? 0) ч.</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span><i class="bi bi-people me-2 text-muted"></i>Слушателей:</span>
+                            <span class="fw-bold">@Model.Enrollments?.Count()</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-footer bg-white border-0 py-3">
+                    @if (Model.Tests != null && Model.Tests.Any())
+                    {
+                        <a href="@Url.Action("Index", "Tests", new { courseId = Model.Id })" class="btn btn-outline-primary w-100 interactive-btn">
+                            <i class="bi bi-pencil-square me-2"></i>Пройти тестирование
+                        </a>
+                    }
+                    else
+                    {
+                        <button class="btn btn-outline-secondary w-100" disabled>
+                            <i class="bi bi-lock me-2"></i>Тесты пока не добавлены
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>

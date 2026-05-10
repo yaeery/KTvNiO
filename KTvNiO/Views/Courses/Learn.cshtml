@@ -5,60 +5,102 @@
     ViewData["Title"] = "Изучение: " + Model.Title;
 }
 
-<h2>@Model.Title</h2>
-<hr />
+<div class="container mt-5">
+    <nav aria-label="breadcrumb" class="mb-4 fade-in">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")" class="text-decoration-none">Главная</a></li>
+            <li class="breadcrumb-item"><a href="@Url.Action("Details", "Courses", new { id = Model.Id })" class="text-decoration-none">@Model.Title</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Изучение материала</li>
+        </ol>
+    </nav>
 
-<div class="row">
-    <div class="col-md-9">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Учебный материал</h4>
+    <div class="row g-4">
+        <div class="col-lg-9">
+            <div class="card shadow-sm border-0 interactive-card fade-in mb-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-book-half me-2"></i>Учебный материал</h4>
+                </div>
+                <div class="card-body p-4" style="min-height: 400px;">
+                    @Html.Raw(Model.Content)
+                </div>
             </div>
-            <div class="card-body">
-                @Html.Raw(Model.Content)
-            </div>
+            
+            @if (ViewBag.Enrollment != null && !ViewBag.Enrollment.IsCompleted)
+            {
+                <div class="card shadow-sm border-0 interactive-card fade-in">
+                    <div class="card-body p-4 text-center">
+                        <form asp-controller="Courses" asp-action="CompleteCourse" method="post">
+                            <input type="hidden" name="courseId" value="@Model.Id" />
+                            <button type="submit" class="btn btn-success btn-lg interactive-btn">
+                                <i class="bi bi-check-circle me-2"></i>Я изучил материал, перейти к тесту
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            }
+            else if (ViewBag.Enrollment?.IsCompleted == true)
+            {
+                <div class="card shadow-sm border-0 interactive-card fade-in">
+                    <div class="card-body p-4 text-center">
+                        <a asp-controller="Tests" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-primary btn-lg interactive-btn">
+                            <i class="bi bi-pencil-square me-2"></i>Пройти тестирование
+                        </a>
+                    </div>
+                </div>
+            }
         </div>
         
-        @if (ViewBag.Enrollment != null && !ViewBag.Enrollment.IsCompleted)
-        {
-            <form asp-controller="Courses" asp-action="CompleteCourse" method="post" class="mb-3">
-                <input type="hidden" name="courseId" value="@Model.Id" />
-                <button type="submit" class="btn btn-primary btn-lg">Я изучил материал, перейти к тесту</button>
-            </form>
-        }
-        else if (ViewBag.Enrollment?.IsCompleted == true)
-        {
-            <a asp-controller="Tests" asp-action="Index" asp-route-id="@Model.Id" class="btn btn-primary btn-lg">Пройти тестирование</a>
-        }
-    </div>
-    
-    <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Ваш прогресс</h5>
-                @if (ViewBag.Enrollment != null)
-                {
-                    <p class="card-text">
-                        <strong>Статус:</strong> 
-                        @(ViewBag.Enrollment.IsCompleted ? "Завершено" : "В процессе")<br/>
-                        <strong>Дата начала:</strong> @ViewBag.Enrollment.EnrolledAt.ToShortDateString()<br/>
-                        @if (ViewBag.Enrollment.CompletedAt.HasValue)
-                        {
-                            <text><strong>Дата завершения:</strong> @ViewBag.Enrollment.CompletedAt.Value.ToShortDateString()</text>
-                        }
-                    </p>
-                }
-                else
-                {
-                    <p class="card-text text-muted">Вы не записаны на этот курс</p>
-                }
+        <div class="col-lg-3">
+            <div class="card shadow-sm border-0 interactive-card fade-in sticky-top" style="top: 2rem;">
+                <div class="card-header bg-success text-white py-3">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up me-2"></i>Ваш прогресс</h5>
+                </div>
+                <div class="card-body">
+                    @if (ViewBag.Enrollment != null)
+                    {
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Статус:</span>
+                                <span class="badge @(ViewBag.Enrollment.IsCompleted ? "bg-success" : "bg-warning text-dark")">
+                                    @(ViewBag.Enrollment.IsCompleted ? "Завершено" : "В процессе")
+                                </span>
+                            </div>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-calendar me-2 text-muted"></i>Дата начала:</span>
+                                <span class="fw-bold">@ViewBag.Enrollment.EnrolledAt.ToShortDateString()</span>
+                            </li>
+                            @if (ViewBag.Enrollment.CompletedAt.HasValue)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                    <span><i class="bi bi-calendar-check me-2 text-muted"></i>Завершено:</span>
+                                    <span class="fw-bold">@ViewBag.Enrollment.CompletedAt.Value.ToShortDateString()</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Вы не записаны на этот курс
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
-        
-        <div class="card mt-3">
-            <div class="card-body">
-                <h5 class="card-title">Навигация</h5>
-                <a asp-controller="Courses" asp-action="Index" class="btn btn-secondary btn-sm">Все курсы</a>
+            
+            <div class="card shadow-sm border-0 interactive-card fade-in mt-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-compass me-2"></i>Навигация</h6>
+                    <div class="d-grid gap-2">
+                        <a asp-controller="Courses" asp-action="Index" class="btn btn-outline-secondary interactive-btn">
+                            <i class="bi bi-arrow-left me-2"></i>Все курсы
+                        </a>
+                        <a href="@Url.Action("Details", "Courses", new { id = Model.Id })" class="btn btn-outline-primary interactive-btn">
+                            <i class="bi bi-info-circle me-2"></i>О курсе
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
