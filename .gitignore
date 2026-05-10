@@ -1,8 +1,7 @@
 ```
-# Compiled and build artifacts
-*.o
-*.obj
-*.exe
+# Build artifacts
+bin/
+obj/
 *.dll
 *.so
 *.a
@@ -15,6 +14,7 @@ obj/
 *.pdb
 *.config
 *.csproj.user
+*.userprefs
 
 # Dependencies
 packages/
@@ -29,6 +29,7 @@ node_modules/
 __pycache__/
 
 # Dependencies
+packages/
 node_modules/
 venv/
 .venv/
