@@ -16,7 +16,7 @@
             
             <div class="form-group">
                 <label asp-for="Email"></label>
-                <input asp-for="Email" class="form-control" />
+                <input asp-for="Email" class="form-control" placeholder="Email или логин" />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
             
@@ -31,35 +31,34 @@
     </div>
     
     <div class="col-md-8">
-        <h4>Демо-учетные записи</h4>
+        <h4>Демо-учетные записи (пароль: password123)</h4>
         <table class="table table-bordered">
             <thead>
                 <tr>
                     <th>Роль</th>
-                    <th>Email</th>
-                    <th>Пароль</th>
+                    <th>Логин/Email</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>Студент</td>
-                    <td>student1@test.com</td>
-                    <td>password123</td>
+                    <td>student_alex / alex@lms.local</td>
+                </tr>
+                <tr>
+                    <td>Студент</td>
+                    <td>student_maria / maria@lms.local</td>
                 </tr>
                 <tr>
                     <td>Преподаватель</td>
-                    <td>teacher1@test.com</td>
-                    <td>password123</td>
+                    <td>teacher_math / math@lms.local</td>
                 </tr>
                 <tr>
                     <td>Разработчик</td>
-                    <td>developer1@test.com</td>
-                    <td>password123</td>
+                    <td>admin_dev / dev@lms.local</td>
                 </tr>
                 <tr>
                     <td>Поддержка</td>
-                    <td>support1@test.com</td>
-                    <td>password123</td>
+                    <td>support_help / help@lms.local</td>
                 </tr>
             </tbody>
         </table>

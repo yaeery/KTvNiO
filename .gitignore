@@ -1,7 +1,5 @@
 ```
 # Build artifacts
-bin/
-obj/
 *.dll
 *.so
 *.a
@@ -13,8 +11,10 @@ obj/
 *.exe
 *.pdb
 *.config
-*.csproj.user
-*.userprefs
+bin/
+obj/
+Debug/
+Release/
 
 # Dependencies
 packages/
@@ -52,6 +52,17 @@ htmlcov/
 .vs/
 .vscode/
 *.userprefs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+```
 .idea/
 
 *.swp

@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using KTvNiO.Models;
 using KTvNiO.Data;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Threading.Tasks;
 using System.Linq;
 using System;
@@ -13,22 +14,17 @@ namespace KTvNiO.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
 
-        public AccountController(
-            UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager,
-            ApplicationDbContext context)
+        public AccountController(ApplicationDbContext context)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
             _context = context;
         }
 
-        public IActionResult Login()
+        [HttpGet]
+        public IActionResult Login(string returnUrl = null)
         {
+            ViewData["ReturnUrl"] = returnUrl;
             return View();
         }
 
@@ -40,36 +36,51 @@ namespace KTvNiO.Controllers
 
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByEmailAsync(model.Email);
-                if (user != null)
-                {
-                    var result = await _signInManager.PasswordSignInAsync(user, model.Password, false, lockoutOnFailure: false);
-                    if (result.Succeeded)
-                    {
-                        // Логируем вход
-                        await LogActivity(user.Id, "Login", $"Вход в систему");
+                // Поиск пользователя в БД по Email или Username
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == model.Email || u.Username == model.Email);
 
-                        // Перенаправляем в зависимости от роли
-                        var role = (await _userManager.GetRolesAsync(user)).FirstOrDefault();
-                        switch (role)
-                        {
-                            case "Teacher":
-                                return RedirectToAction("Index", "Courses");
-                            case "Developer":
-                                return RedirectToAction("Index", "Admin");
-                            case "Support":
-                                return RedirectToAction("Index", "Admin");
-                            default:
-                                return RedirectToAction("Index", "Home");
-                        }
+                if (user != null && user.PasswordHash == model.Password)
+                {
+                    // Создание claims
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Name, user.Username),
+                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                        new Claim("UserRole", user.UserRole)
+                    };
+
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var authProperties = new AuthenticationProperties();
+
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(claimsIdentity),
+                        authProperties);
+
+                    // Логируем вход
+                    await LogActivity(user.Id, "Login", "User", user.Id, "Вход в систему");
+
+                    // Перенаправляем в зависимости от роли
+                    switch (user.UserRole)
+                    {
+                        case "Teacher":
+                            return RedirectToAction("Index", "Courses");
+                        case "Developer":
+                        case "Support":
+                            return RedirectToAction("Index", "Admin");
+                        default:
+                            return RedirectToAction("Index", "Home");
                     }
                 }
+
                 ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
             }
 
             return View(model);
         }
 
+        [HttpGet]
         public IActionResult Register()
         {
             return View();
@@ -81,30 +92,40 @@ namespace KTvNiO.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser
+                // Проверка на существование
+                if (await _context.Users.AnyAsync(u => u.Username == model.Username || u.Email == model.Email))
                 {
-                    UserName = model.Email,
+                    ModelState.AddModelError(string.Empty, "Пользователь с таким именем или Email уже существует.");
+                    return View(model);
+                }
+
+                var newUser = new User
+                {
+                    Username = model.Username ?? model.Email,
                     Email = model.Email,
+                    PasswordHash = model.Password, // В демо без хэширования
                     FullName = model.FullName,
-                    Role = UserRole.Student
+                    UserRole = "Student", // По умолчанию студент
+                    CreatedAt = DateTime.Now
                 };
 
-                var result = await _userManager.CreateAsync(user, model.Password);
-                if (result.Succeeded)
-                {
-                    await _userManager.AddToRoleAsync(user, "Student");
-                    
-                    // Логируем регистрацию
-                    await LogActivity(user.Id, "Register", "Регистрация нового пользователя");
-                    
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
-                }
+                _context.Users.Add(newUser);
+                await _context.SaveChangesAsync();
 
-                foreach (var error in result.Errors)
+                // Автоматический вход после регистрации
+                var claims = new List<Claim>
                 {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
+                    new Claim(ClaimTypes.Name, newUser.Username),
+                    new Claim(ClaimTypes.NameIdentifier, newUser.Id.ToString()),
+                    new Claim("UserRole", newUser.UserRole)
+                };
+
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+
+                await LogActivity(newUser.Id, "Register", "User", newUser.Id, "Регистрация нового пользователя");
+
+                return RedirectToAction("Index", "Home");
             }
 
             return View(model);
@@ -114,55 +135,71 @@ namespace KTvNiO.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            var userId = _userManager.GetUserId(User);
-            if (!string.IsNullOrEmpty(userId))
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null)
             {
-                await LogActivity(userId, "Logout", "Выход из системы");
+                await LogActivity(int.Parse(userIdClaim.Value), "Logout", "User", int.Parse(userIdClaim.Value), "Выход из системы");
             }
 
-            await _signInManager.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
 
-        private async Task LogActivity(string userId, string action, string details)
+        private async Task LogActivity(int userId, string action, string entityName, int entityId, string details)
         {
-            _context.ActivityLogs.Add(new ActivityLog
+            try
             {
-                UserId = userId,
-                Action = action,
-                Details = details,
-                Timestamp = DateTime.Now
-            });
-            await _context.SaveChangesAsync();
+                _context.ActivityLogs.Add(new ActivityLog
+                {
+                    UserId = userId,
+                    ActionName = action,
+                    EntityName = entityName,
+                    EntityId = entityId,
+                    Details = details,
+                    Timestamp = DateTime.Now,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+                });
+                await _context.SaveChangesAsync();
+            }
+            catch { /* Игнорируем ошибки логирования */ }
         }
     }
 
     public class LoginViewModel
     {
         [Required]
-        [EmailAddress]
+        [Display(Name = "Email или логин")]
         public string Email { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
+        [Display(Name = "Пароль")]
         public string Password { get; set; }
     }
 
     public class RegisterViewModel
     {
         [Required]
+        [Display(Name = "ФИО")]
         public string FullName { get; set; }
 
         [Required]
         [EmailAddress]
+        [Display(Name = "Email")]
         public string Email { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
+        [Display(Name = "Пароль")]
         public string Password { get; set; }
 
         [DataType(DataType.Password)]
+        [Display(Name = "Подтверждение пароля")]
         [Compare("Password", ErrorMessage = "Пароли не совпадают.")]
         public string ConfirmPassword { get; set; }
+        
+        [Required]
+        [Display(Name = "Логин")]
+        public string Username { get; set; }
     }
 }
